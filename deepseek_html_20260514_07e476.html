@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f172a">
+<title>MFD Duty Roster · Drive Sync</title>
+<!-- SheetJS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#0f172a;--bg2:#1e293b;--bg3:#334155;--bg4:#475569;--border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.16);--text:#f1f5f9;--text2:#94a3b8;--text3:#64748b;--accent:#38bdf8;--abg:rgba(56,189,248,.13);--green:#4ade80;--gbg:rgba(74,222,128,.13);--purple:#a78bfa;--pbg:rgba(167,139,250,.13);--amber:#fbbf24;--ambg:rgba(251,191,36,.13);--red:#f87171;--rbg:rgba(248,113,113,.13);--obs:#f97316;--obsbg:rgba(249,115,22,.13);--fore:#22d3ee;--forebg:rgba(34,211,238,.13);--r:10px;--rl:14px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+input,select,button,textarea{font-family:inherit}
+.screen{display:none;flex-direction:column;min-height:100vh}
+.screen.active{display:flex}
+.login-card{background:var(--bg2);border-radius:var(--rl);padding:1.5rem;max-width:360px;width:100%}
+.inp{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);color:var(--text);padding:10px 12px;margin-bottom:11px}
+.btn-pri{background:var(--accent);color:#0c1a27;border:none;border-radius:var(--r);padding:11px;font-weight:700;cursor:pointer}
+.type-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.type-btn{padding:11px;border:1px solid var(--border2);border-radius:var(--r);background:var(--bg3);text-align:center;cursor:pointer}
+.type-btn.obs.sel{border-color:var(--obs);background:var(--obsbg)}
+.type-btn.fore.sel{border-color:var(--fore);background:var(--forebg)}
+.type-label{font-weight:700}
+.topbar{background:var(--bg2);padding:11px 15px;display:flex;justify-content:space-between;align-items:center}
+.tabs{display:flex;background:var(--bg2);border-bottom:1px solid var(--border)}
+.tab-btn{flex:1;padding:10px 4px;font-size:11px;color:var(--text3);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-pane{display:none;padding:14px}
+.tab-pane.active{display:block}
+.month-row{background:var(--bg2);border-radius:var(--r);padding:9px 13px;display:flex;justify-content:space-between;margin-bottom:14px}
+.day-row,.duty-row{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center}
+.day-row.today{border-color:var(--accent);background:var(--abg)}
+.sh{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700}
+.s-OFF{background:rgba(100,116,139,.2);color:var(--text3)}
+.s-MO,.s-MF{background:var(--gbg);color:var(--green)}
+.s-AO{background:#d9f99d33;color:#bef264}
+.s-A1{background:var(--abg);color:var(--accent)}
+.s-AON{background:var(--pbg);color:var(--purple)}
+.s-DA,.s-MA{background:var(--forebg);color:var(--fore)}
+.sum-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px}
+.sum-card{background:var(--bg2);border-radius:var(--r);padding:12px;text-align:center}
+.sum-num{font-size:26px;font-weight:700}
+.cal-body{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.cal-cell{background:var(--bg2);border-radius:7px;padding:4px 3px;min-height:50px}
+.cal-cell.today{border-color:var(--accent);border:1px solid}
+.modal-wrap{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:500;display:flex;align-items:flex-end;justify-content:center}
+.modal-sheet{background:var(--bg2);border-radius:var(--rl) var(--rl) 0 0;width:100%;max-width:480px;padding:20px 16px}
+.btn-g{background:var(--green);color:#052e16;border:none;border-radius:var(--r);padding:9px 16px;font-weight:700;cursor:pointer}
+.btn-d{background:var(--rbg);color:var(--red);border:1px solid var(--red);border-radius:var(--r);padding:6px 12px}
+.btn-o{background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:var(--r);padding:7px 13px}
+.upload-zone{border:2px dashed var(--border2);border-radius:var(--r);padding:28px 16px;text-align:center;cursor:pointer;margin-bottom:10px}
+.gdrive-status{font-size:12px;padding:10px;border-radius:var(--r);margin-bottom:10px}
+.gd-connected{background:var(--gbg);color:var(--green)}
+.gs-ok{background:var(--gbg);color:var(--green)}.gs-err{background:var(--rbg);color:var(--red)}.gs-loading{background:var(--ambg);color:var(--amber)}
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--green);padding:9px 20px;border-radius:20px;font-weight:700;opacity:0;transition:opacity .3s;pointer-events:none;z-index:9999}
+.toast.show{opacity:1}.toast.err-t{background:var(--red);color:#fff}
+</style>
+</head>
+<body>
+<div id="toast" class="toast"></div>
+
+<!-- LOGIN -->
+<div class="screen active" id="s-login">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:1rem">
+    <div class="login-card">
+      <h2 style="margin-bottom:1rem">📋 MFD Duty Roster</h2>
+      <label class="lbl">Roster type</label>
+      <div class="type-row">
+        <div class="type-btn obs" id="type-obs" onclick="selectType('obs')"><div class="type-label">🔭 Observer</div><div style="font-size:10px">AO / MO duties</div></div>
+        <div class="type-btn fore" id="type-fore" onclick="selectType('fore')"><div class="type-label">🌤 Forecaster</div><div style="font-size:10px">MF / AF / DA / MA</div></div>
+      </div>
+      <label class="lbl">Your name</label>
+      <select class="inp" id="login-name"></select>
+      <button class="btn-pri" onclick="doLogin()">View My Roster</button>
+      <div style="margin-top:12px;text-align:center"><a onclick="openAdminLogin()" style="color:var(--accent);cursor:pointer">🔑 Admin panel</a></div>
+      <div style="margin-top:8px;font-size:10px;color:var(--text3);text-align:center">📌 After login, Admin → Google Drive → Connect & import roster</div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="screen" id="s-app">
+  <div class="topbar"><div><span id="app-username"></span><span class="type-badge" id="app-type-badge"></span></div><div><button class="ib" onclick="doLogout()">🚪</button></div></div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showTab('mine')">My Duties</button>
+    <button class="tab-btn" onclick="showTab('cal')">Calendar</button>
+    <button class="tab-btn" onclick="showTab('today')">Today</button>
+    <button class="tab-btn" onclick="showTab('archive')">Archive</button>
+  </div>
+  <div class="tab-pane active" id="pane-mine"><div class="month-row"><select id="sel-mine" onchange="renderMine()"></select></div><div id="mine-list"></div><div class="sum-grid" id="mine-sum"></div></div>
+  <div class="tab-pane" id="pane-cal"><div class="month-row"><select id="sel-cal" onchange="renderCal()"></select></div><div class="cal-body" id="cal-body"></div></div>
+  <div class="tab-pane" id="pane-today"><div id="today-content"></div></div>
+  <div class="tab-pane" id="pane-archive"><div id="archive-content"></div></div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="screen" id="s-admin">
+  <div class="topbar"><div><strong>Admin</strong> <span id="admin-name-label"></span></div><div><button class="ib" onclick="backToLogin()">←</button></div></div>
+  <div style="padding:14px;overflow-y:auto">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+      <button class="a-tab active" onclick="showAdminTab('staff')">👥 Staff</button>
+      <button class="a-tab" onclick="showAdminTab('roster')">📅 Months</button>
+      <button class="a-tab" onclick="showAdminTab('drive')">☁️ Google Drive</button>
+      <button class="a-tab" onclick="showAdminTab('clear')">🧹 Reset Data</button>
+    </div>
+    <!-- STAFF -->
+    <div id="ap-staff" class="a-pane active"><div class="a-sec"><h3>🔭 Observers</h3><div id="obs-staff-list"></div><div class="staff-add-row"><input id="obs-inp" placeholder="Name"><button onclick="addStaff('obs')">+ Add</button></div></div><div class="a-sec"><h3>🌤 Forecasters</h3><div id="fore-staff-list"></div><div><input id="fore-inp" placeholder="Name"><button onclick="addStaff('fore')">+ Add</button></div></div></div>
+    <!-- MONTHS -->
+    <div id="ap-roster" class="a-pane"><div class="a-sec"><h3>➕ Add New Month (Manual)</h3><div><input id="nm-name" placeholder="Month name e.g. Ashadh 2083"><input id="nm-nepali" placeholder="नेपाली"><input type="date" id="nm-start"><select id="nm-type"><option value="obs">Observer</option><option value="fore">Forecaster</option></select><button onclick="saveNewMonthSimple()" class="btn-g">Save Month</button></div></div><div class="a-sec"><h3>📆 Existing Months</h3><div id="existing-months"></div></div></div>
+    <!-- DRIVE -->
+    <div id="ap-drive" class="a-pane"><div class="a-sec"><h3>☁️ Google Drive — Roster Folder</h3><div id="drive-status-box" class="gdrive-status">⚙️ Configure Client ID</div><input class="inp" id="gd-client-id" placeholder="Google OAuth Client ID"><button class="btn-o" onclick="saveClientIdAndConnect()">🔗 Save & Connect</button><button class="btn-g" onclick="scanDriveFolder()" style="margin-top:8px">🔍 Scan 'Roster' folder</button><div id="drive-file-list" style="margin-top:10px"></div><div id="drive-scan-status" class="gs-status" style="display:none"></div><hr style="margin:14px 0"><h3>📂 Upload XLSX directly</h3><div class="upload-zone" id="upload-zone"><input type="file" id="xlsx-file" accept=".xlsx"><div>📁 Drop or click to select XLSX</div></div><div class="g2" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><input id="xlsx-mname" placeholder="Month name (e.g. Ashadh 2083)"><input id="xlsx-mnepali" placeholder="नेपाली"></div><select id="xlsx-type" class="inp"><option value="obs">Observer</option><option value="fore">Forecaster</option></select><button class="btn-g" onclick="importSelectedXLSX()">📥 Import from XLSX</button><div id="xlsx-status" class="gs-status"></div></div></div>
+    <!-- RESET -->
+    <div id="ap-clear" class="a-pane"><div class="a-sec"><h3>⚠️ Reset App Data</h3><p style="color:var(--text3);font-size:12px">Removes all rosters, staff and imported months. Use this if you see wrong names (Biju/Jyoti etc).</p><button class="btn-d" onclick="resetAllData()">🗑️ DELETE ALL DATA & REFRESH</button><p style="margin-top:12px">After reset, import fresh XLSX from Drive or upload.</p></div></div>
+  </div>
+</div>
+
+<script>
+// ----------------------------- STORAGE KEYS ---------------------------------
+const STORAGE = { ROSTER: 'mfd_r5', STAFF: 'mfd_s5', ADMINS: 'mfd_a5', MPIN: 'mfd_mp5', GD: 'mfd_gd5' };
+let currentUser = '', currentType = 'obs', isAdmin = false, isMaster = false;
+let gdToken = null, gdFolderId = null;
+
+// Helper
+const getStorage = (k,def) => { try { let v=localStorage.getItem(k); return v?JSON.parse(v):def; } catch(e){ return def; } };
+const setStorage = (k,v) => localStorage.setItem(k,JSON.stringify(v));
+
+// Default: NO SEED NAMES – clean empty
+let defaultStaff = { obs: [], fore: [] };
+let defaultRoster = { obs: [], fore: [] };
+
+function initEmptyData() {
+  if(!getStorage(STORAGE.ROSTER,null)) setStorage(STORAGE.ROSTER,defaultRoster);
+  if(!getStorage(STORAGE.STAFF,null)) setStorage(STORAGE.STAFF,defaultStaff);
+  if(!getStorage(STORAGE.MPIN,null)) setStorage(STORAGE.MPIN,'1234');
+  if(!getStorage(STORAGE.ADMINS,null)) setStorage(STORAGE.ADMINS,[]);
+}
+initEmptyData();
+
+// Shift definitions (AO/MO for observer; MF/AF/DA/MA for forecaster)
+const OBS_SHIFTS = ['xx','AO','MO','MO*','AON*','A1','A2'];
+const FORE_SHIFTS = ['xx','MF','AF','DA','MA','MF*','AFN*','SM1','SA2'];
+const shiftLabel = (s) => {
+  const map = { xx:'Day off', AO:'Morning Observer', MO:'Morning', MO*:'Morning*', AON*:'Night duty', A1:'Afternoon', A2:'Late',
+                MF:'Morning Fcst', AF:'Afternoon Fcst', DA:'Day SDM1', MA:'Day SDA2', MF*:'Morning*', AFN*:'Night Fcst', SM1:'SDM1', SA2:'SDA2' };
+  return map[s] || s;
+};
+const shiftClass = (s) => {
+  if(s==='xx') return 's-OFF';
+  if(s==='AO') return 's-AO';
+  if(s==='MO'||s==='MF') return 's-MO';
+  if(s==='DA'||s==='MA') return 's-DA';
+  if(s==='AF') return 's-A1';
+  if(s==='AON*') return 's-AON';
+  return 's-OTH';
+};
+
+// ----------------------------- LOGIN ----------------------------------------
+function selectType(t) { currentType=t; document.getElementById('type-obs').classList.toggle('sel',t==='obs'); document.getElementById('type-fore').classList.toggle('sel',t==='fore'); populateNameSelect(); }
+function populateNameSelect() { let staff = (getStorage(STORAGE.STAFF)[currentType]||[]); let sel=document.getElementById('login-name'); sel.innerHTML='<option value="">-- Select --</option>'; staff.forEach(n=>{let o=document.createElement('option');o.value=n;o.text=n;sel.appendChild(o);}); }
+function doLogin() { let name=document.getElementById('login-name').value; if(!name){toast('Select your name','err');return;} currentUser=name; showApp(); }
+function openAdminLogin() { let pin=prompt('Admin PIN:'); if(pin===getStorage(STORAGE.MPIN,'1234')){ isAdmin=true; isMaster=true; showAdmin('Master Admin'); return; } let subs=getStorage(STORAGE.ADMINS,[]); let found=subs.find(a=>a.pin===pin); if(found){ isAdmin=true; isMaster=false; showAdmin(found.name); return; } toast('Wrong PIN','err'); }
+function showApp() { document.getElementById('s-login').classList.remove('active'); document.getElementById('s-app').classList.add('active'); document.getElementById('app-username').innerText=currentUser; let badge=document.getElementById('app-type-badge'); badge.innerText=currentType==='obs'?'Observer':'Forecaster'; badge.style.background=currentType==='obs'?'var(--obsbg)':'var(--forebg)'; fillMonthSelects(); renderMine(); renderCal(); renderToday(); renderArchive(); checkTodayNotif(); }
+function doLogout() { location.reload(); }
+function backToLogin() { document.getElementById('s-admin').classList.remove('active'); document.getElementById('s-login').classList.add('active'); isAdmin=false; }
+
+// ----------------------------- ROSTER HELPERS ---------------------------------
+function getRoster() { return getStorage(STORAGE.ROSTER,{obs:[],fore:[]}); }
+function saveRoster(r) { setStorage(STORAGE.ROSTER,r); }
+function getStaff() { return getStorage(STORAGE.STAFF,{obs:[],fore:[]}); }
+function saveStaff(s) { setStorage(STORAGE.STAFF,s); }
+
+function getMonths(type) { return getRoster()[type]||[]; }
+function getLatestMonth(type) { let months=getMonths(type); if(!months.length) return null; return months.slice().sort((a,b)=>(b.startDate||'').localeCompare(a.startDate||''))[0]; }
+function fillMonthSelects() { ['mine','cal'].forEach(id=>{ let sel=document.getElementById('sel-'+id); sel.innerHTML=''; let months=getMonths(currentType); months.forEach(m=>{ let opt=document.createElement('option'); opt.value=m.id; opt.text=m.name+(m.nepali?` · ${m.nepali}`:''); sel.appendChild(opt); }); let latest=getLatestMonth(currentType); if(latest) sel.value=latest.id; }); }
+function getSelectedMonth(selId) { let id=document.getElementById(selId).value; return getMonths(currentType).find(m=>m.id===id)||getLatestMonth(currentType); }
+
+// render my duties
+function renderMine() {
+  let month=getSelectedMonth('sel-mine'); if(!month){ document.getElementById('mine-list').innerHTML='<div style="padding:2rem;text-align:center">📭 No roster imported. Admin → Google Drive → import XLSX</div>'; return; }
+  let staff=getStaff()[currentType]||[]; let today=todayISO(); let counts={n:0,mo:0,af:0,off:0};
+  let html=''; month.days.forEach(d=>{ let s=(d.duties||{})[currentUser]||'xx'; let isToday=d.isoDate===today;
+    if(s==='xx') counts.off++; else if(['AON*','AFN*'].includes(s)) counts.n++; else if(['MO','MO*','MF','MF*','AO','DA','MA','AF'].includes(s)) counts.mo++; else counts.af++;
+    html+=`<div class="day-row${isToday?' today':''}"><div><div>${d.day} ${d.date} गते</div><div style="font-size:10px;color:var(--text3)">${d.isoDate||''}</div></div><span class="sh ${shiftClass(s)}">${shiftLabel(s)}</span>${isToday?'<span style="background:var(--accent);padding:2px 8px;border-radius:20px;font-size:10px">Today</span>':''}</div>`;
+  });
+  document.getElementById('mine-list').innerHTML=html;
+  document.getElementById('mine-sum').innerHTML=`<div class="sum-card"><div class="sum-num" style="color:var(--purple)">${counts.n}</div><div>Nights</div></div><div class="sum-card"><div class="sum-num" style="color:var(--green)">${counts.mo}</div><div>Morning/AM</div></div><div class="sum-card"><div class="sum-num" style="color:var(--accent)">${counts.af}</div><div>Afternoon</div></div><div class="sum-card"><div class="sum-num" style="color:var(--text3)">${counts.off}</div><div>Off</div></div>`;
+}
+
+function renderCal() { let m=getSelectedMonth('sel-cal'); if(!m) return; let staff=getStaff()[currentType]||[]; let today=todayISO(); let html=''; m.days.forEach(d=>{ let active=staff.filter(n=>(d.duties||{})[n]&&(d.duties||{})[n]!=='xx').slice(0,3); html+=`<div class="cal-cell${d.isoDate===today?' today':''}"><div class="cal-dn">${d.date}</div>${active.map(n=>`<div style="font-size:8px;background:var(--bg3);margin-bottom:2px;padding:2px;border-radius:3px">${n.slice(0,4)}</div>`).join('')}</div>`; }); document.getElementById('cal-body').innerHTML=html; }
+
+function renderToday() { let today=todayISO(); let roster=getRoster(); let month=roster[currentType]?.find(m=>m.days.some(d=>d.isoDate===today)); let day=month?.days.find(d=>d.isoDate===today); if(!day){ document.getElementById('today-content').innerHTML='<div style="padding:2rem;text-align:center">No duty today</div>'; return; } let staff=getStaff()[currentType]||[]; let onDuty=staff.filter(n=>(day.duties||{})[n]&&(day.duties||{})[n]!=='xx'); let off=staff.filter(n=>!(day.duties||{})[n]||(day.duties||{})[n]==='xx'); document.getElementById('today-content').innerHTML=`<div style="background:var(--bg2);padding:12px;border-radius:var(--r)"><strong>${month.name}</strong> · ${day.day} ${day.date} गते</div><div class="sec-lbl">On duty</div>${onDuty.map(n=>`<div class="duty-row"><span>${n}</span><span class="sh ${shiftClass((day.duties||{})[n])}">${shiftLabel((day.duties||{})[n])}</span></div>`).join('')}<div class="sec-lbl">Day off</div><div class="off-chips">${off.map(n=>`<span style="background:var(--bg3);padding:4px 10px;border-radius:20px">${n}</span>`).join('')}</div>`; }
+
+function renderArchive() { let months=getMonths(currentType); if(!months.length){document.getElementById('archive-content').innerHTML='<p style="padding:2rem">No months</p>';return;} let html='<div class="archive-grid" style="display:grid;gap:8px;grid-template-columns:1fr 1fr">'; months.forEach(m=>{ html+=`<div class="archive-card" style="background:var(--bg2);padding:12px;border-radius:var(--r)" onclick="alert('Full view: ${m.days.length} days')"><strong>${m.name}</strong><br><span style="font-size:11px">${m.nepali||''}</span></div>`; }); html+='</div>'; document.getElementById('archive-content').innerHTML=html; }
+
+function checkTodayNotif() { let today=todayISO(); let roster=getRoster(); let shift=null; roster[currentType]?.forEach(m=>{ let d=m.days.find(dd=>dd.isoDate===today); if(d) shift=(d.duties||{})[currentUser]; }); if(shift && shift!=='xx') toast(`🔔 Today: ${shiftLabel(shift)}`); }
+function todayISO() { return new Date().toISOString().split('T')[0]; }
+
+// ----------------------------- ADMIN: STAFF & MONTHS --------------------------
+function renderStaffLists() { ['obs','fore'].forEach(t=>{ let staff=getStaff()[t]||[]; document.getElementById(t+'-staff-list').innerHTML=staff.map((n,i)=>`<div class="list-row"><span>${n}</span><button class="btn-d btn-sm" onclick="removeStaff('${t}',${i})">Remove</button></div>`).join('')||'<div style="color:var(--text3)">No staff</div>'; }); }
+function addStaff(t){ let inp=document.getElementById(t+'-inp'); let name=inp.value.trim(); if(!name) return; let s=getStaff(); s[t].push(name); saveStaff(s); inp.value=''; renderStaffLists(); populateNameSelect(); toast(`Added ${name}`); }
+function removeStaff(t,i){ let s=getStaff(); s[t].splice(i,1); saveStaff(s); renderStaffLists(); populateNameSelect(); toast('Removed'); }
+function saveNewMonthSimple(){ let name=document.getElementById('nm-name').value.trim(); if(!name){toast('Enter month name','err');return;} let start=document.getElementById('nm-start').value; if(!start){toast('Start date','err');return;} let type=document.getElementById('nm-type').value; let staff=getStaff()[type]||[]; let days=[]; for(let i=1;i<=30;i++){ let dt=new Date(start); dt.setDate(dt.getDate()+i-1); let iso=dt.toISOString().split('T')[0]; let duties={}; staff.forEach(n=>duties[n]='xx'); days.push({date:i,isoDate:iso,day:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dt.getDay()],duties}); } let id=type+'-'+name.replace(/\s/g,'-'); let r=getRoster(); r[type]=r[type]||[]; r[type].push({id,name,startDate:start,days,type}); saveRoster(r); fillMonthSelects(); renderExistingMonths(); toast(`Month ${name} added`); }
+function renderExistingMonths(){ let all=[...getMonths('obs'),...getMonths('fore')]; document.getElementById('existing-months').innerHTML=all.map(m=>`<div class="list-row"><span><strong>${m.name}</strong> (${m.type==='obs'?'Obs':'Fore'})</span><button class="btn-d" onclick="deleteMonth('${m.type}','${m.id}')">Delete</button></div>`).join(''); }
+function deleteMonth(type,id){ let r=getRoster(); r[type]=r[type].filter(m=>m.id!==id); saveRoster(r); fillMonthSelects(); renderExistingMonths(); toast('Deleted'); }
+
+function resetAllData(){ if(confirm('⚠️ This will DELETE all rosters, staff and imported data. Continue?')){ localStorage.clear(); initEmptyData(); toast('All data reset. Refresh page.'); setTimeout(()=>location.reload(),1200); } }
+
+// ----------------------------- GOOGLE DRIVE + XLSX IMPORT (CLEAN) ------------
+function saveClientIdAndConnect(){ let clientId=document.getElementById('gd-client-id').value.trim(); if(!clientId){toast('Enter Client ID','err');return;} setStorage(STORAGE.GD,{clientId}); startGoogleOAuth(clientId); }
+function startGoogleOAuth(clientId){ let redirect=window.location.href.split('?')[0].split('#')[0]; let url=`https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirect)}&response_type=token&scope=https://www.googleapis.com/auth/drive.readonly&prompt=select_account`; window.location.href=url; }
+window.handleAuth=()=>{ let hash=window.location.hash; if(hash.includes('access_token')){ let token=new URLSearchParams(hash.slice(1)).get('access_token'); if(token){ gdToken=token; setStorage(STORAGE.GD,{...getStorage(STORAGE.GD,{}),token}); toast('Drive connected'); history.replaceState(null,'',window.location.pathname); refreshDriveUI(); } } };
+setTimeout(handleAuth,10);
+function refreshDriveUI(){ let cfg=getStorage(STORAGE.GD,{}); gdToken=cfg.token; let box=document.getElementById('drive-status-box'); if(gdToken){ box.innerHTML='✅ Drive connected'; box.className='gdrive-status gd-connected'; } else box.innerHTML='❌ Not connected. Set Client ID and Connect.'; }
+async function scanDriveFolder(){ if(!gdToken){toast('Connect Drive first','err');return;} let statusDiv=document.getElementById('drive-scan-status'); statusDiv.style.display='block'; statusDiv.innerHTML='<span class="spinner"></span> Searching "Roster" folder...'; try{ let folderRes=await fetch(`https://www.googleapis.com/drive/v3/files?q=name='Roster'+and+mimeType='application/vnd.google-apps.folder'&fields=files(id)`,{headers:{Authorization:`Bearer ${gdToken}`}}); let folderData=await folderRes.json(); let folder=folderData.files?.[0]; if(!folder) throw new Error('No folder named "Roster"'); gdFolderId=folder.id; let filesRes=await fetch(`https://www.googleapis.com/drive/v3/files?q='${gdFolderId}'+in+parents+and+trashed=false&fields=files(id,name,modifiedTime)`,{headers:{Authorization:`Bearer ${gdToken}`}}); let filesData=await filesRes.json(); let xlsxFiles=(filesData.files||[]).filter(f=>f.name.match(/\.xlsx?$/i)); if(!xlsxFiles.length) throw new Error('No XLSX files in Roster folder'); let html='<div style="margin-top:10px"><strong>📄 XLSX files:</strong></div>'; xlsxFiles.forEach(f=>{ html+=`<div class="drive-file-row" style="display:flex;justify-content:space-between;margin:6px 0"><span>${f.name}</span><button class="btn-o btn-sm" onclick="fetchAndImportDriveFile('${f.id}','${f.name.replace(/'/g,"\\'")}')">Import</button></div>`; }); document.getElementById('drive-file-list').innerHTML=html; statusDiv.innerHTML='✅ Folder found'; statusDiv.className='gs-status gs-ok'; }catch(e){ statusDiv.innerHTML='❌ '+e.message; statusDiv.className='gs-status gs-err'; } }
+async function fetchAndImportDriveFile(fileId,fileName){ let statusDiv=document.getElementById('drive-scan-status'); statusDiv.style.display='block'; statusDiv.innerHTML=`<span class="spinner"></span> Downloading ${fileName}...`; try{ let resp=await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,{headers:{Authorization:`Bearer ${gdToken}`}}); let ab=await resp.arrayBuffer(); let wb=XLSX.read(new Uint8Array(ab),{type:'array'}); let sheet=wb.SheetNames[0]; let ws=wb.Sheets[sheet]; let rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''}); let parsed=parseRosterFromRows(rows,fileName); if(parsed.error) throw new Error(parsed.error); // save to storage
+ let typeGuess=fileName.toLowerCase().includes('fore')?'fore':'obs'; let mname=parsed.monthName||fileName.replace(/\.xlsx$/i,''); let id=typeGuess+'-'+mname.replace(/\s/g,'-'); let r=getRoster(); r[typeGuess]=r[typeGuess]||[]; let existingIdx=r[typeGuess].findIndex(m=>m.id===id); let newMonth={id,name:mname,nepali:parsed.nepali||'',type:typeGuess,startDate:parsed.startDate,days:parsed.days}; if(existingIdx>=0) r[typeGuess][existingIdx]=newMonth; else r[typeGuess].push(newMonth); saveRoster(r); // merge staff
+ let staff=getStaff(); staff[typeGuess]=[...new Set([...(staff[typeGuess]||[]),...parsed.staffNames])]; saveStaff(staff); statusDiv.innerHTML=`✅ Imported ${parsed.days.length} days · ${parsed.staffNames.length} staff`; statusDiv.className='gs-status gs-ok'; fillMonthSelects(); renderStaffLists(); populateNameSelect(); toast(`Imported ${mname}`); }catch(e){ statusDiv.innerHTML='❌ '+e.message; statusDiv.className='gs-status gs-err'; } }
+function parseRosterFromRows(rows,filename){ if(!rows.length) return {error:'Empty file'}; let headerIdx=rows.findIndex(r=>r.some(c=>c&&(String(c).toUpperCase().includes('DAY')||String(c).includes('गते')))); if(headerIdx<0) headerIdx=0; let headers=rows[headerIdx]; let staffCols=[]; for(let i=3;i<headers.length;i++){ let h=headers[i]; if(h && String(h).trim() && !['mean','total','remark','note','leave'].some(x=>String(h).toLowerCase().includes(x))) staffCols.push({name:String(h).trim(),col:i}); } if(!staffCols.length) return {error:'No staff columns found (need names after day/date columns)'}; let days=[]; let startDate=''; rows.slice(headerIdx+1).forEach(row=>{ let dateNum=parseInt(row[1]); if(isNaN(dateNum)) return; let dayName=String(row[0]||'').trim(); let isoRaw=String(row[2]||'').trim(); let iso=''; if(isoRaw.match(/\d{4}-\d{2}-\d{2}/)) iso=isoRaw.slice(0,10); else if(isoRaw){ let d=new Date(isoRaw); if(!isNaN(d)) iso=d.toISOString().split('T')[0]; } if(iso && !startDate) startDate=iso; let duties={}; staffCols.forEach(sc=>{ let val=String(row[sc.col]||'xx').trim(); if(val===''||val==='-') val='xx'; duties[sc.name]=val; }); days.push({date:dateNum,isoDate:iso,day:dayName,duties}); }); if(!days.length) return {error:'No duty rows'}; let monthName=filename.replace(/\.xlsx$/i,'').replace(/_Roster_mfd/i,'').replace(/[_-]/g,' '); return {days,staffNames:staffCols.map(s=>s.name),startDate,monthName,nepali:''}; }
+// direct XLSX upload
+let loadedWB=null,loadedSheet=null;
+document.getElementById('xlsx-file')?.addEventListener('change',e=>{ let f=e.target.files[0]; if(!f) return; let reader=new FileReader(); reader.onload=ev=>{ let data=new Uint8Array(ev.target.result); loadedWB=XLSX.read(data,{type:'array'}); loadedSheet=loadedWB.SheetNames[0]; document.getElementById('xlsx-status').innerHTML=`✅ Loaded: ${f.name}`; document.getElementById('xlsx-status').className='gs-status gs-ok'; }; reader.readAsArrayBuffer(f); });
+async function importSelectedXLSX(){ if(!loadedWB){ toast('Select XLSX file first','err'); return; } let mname=document.getElementById('xlsx-mname').value.trim(); if(!mname){ toast('Enter month name','err'); return; } let mnepali=document.getElementById('xlsx-mnepali').value; let type=document.getElementById('xlsx-type').value; let ws=loadedWB.Sheets[loadedSheet]; let rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''}); let parsed=parseRosterFromRows(rows,'upload.xlsx'); if(parsed.error){ toast(parsed.error,'err'); return; } parsed.monthName=mname; parsed.nepali=mnepali; let id=type+'-'+mname.replace(/\s/g,'-'); let r=getRoster(); r[type]=r[type]||[]; r[type]=r[type].filter(m=>m.id!==id); r[type].push({id,name:mname,nepali:mnepali,type,startDate:parsed.startDate,days:parsed.days}); saveRoster(r); let staff=getStaff(); staff[type]=[...new Set([...(staff[type]||[]),...parsed.staffNames])]; saveStaff(staff); fillMonthSelects(); renderStaffLists(); populateNameSelect(); toast(`Imported ${mname} (${parsed.days.length} days)`); document.getElementById('xlsx-status').innerHTML=`✅ ${mname} imported`; }
+function populateNameSelect(){ let staff=getStaff()[currentType]||[]; let sel=document.getElementById('login-name'); sel.innerHTML='<option value="">-- Select --</option>'; staff.forEach(n=>{ let o=document.createElement('option'); o.value=n; o.text=n; sel.appendChild(o); }); }
+function showAdminTab(tab){ document.querySelectorAll('.a-pane').forEach(p=>p.classList.remove('active')); document.getElementById('ap-'+tab).classList.add('active'); document.querySelectorAll('.a-tab').forEach(btn=>btn.classList.remove('active')); event.target.classList.add('active'); if(tab==='staff') renderStaffLists(); if(tab==='roster') renderExistingMonths(); if(tab==='drive') refreshDriveUI(); }
+function showAdmin(name){ document.getElementById('s-app').classList.remove('active'); document.getElementById('s-admin').classList.add('active'); document.getElementById('admin-name-label').innerText=name; renderStaffLists(); renderExistingMonths(); refreshDriveUI(); }
+function toast(msg,cls=''){ let t=document.getElementById('toast'); t.innerText=msg; t.className='toast'+(cls==='err'?' err-t':''); t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+function showTab(t){ ['mine','cal','today','archive'].forEach(n=>{ document.getElementById(`pane-${n}`).classList.toggle('active',n===t); document.querySelector(`.tab-btn[onclick*="${n}"]`).classList.toggle('active',n===t); }); if(t==='cal') renderCal(); if(t==='today') renderToday(); if(t==='archive') renderArchive(); }
+window.selectType=selectType; window.doLogin=doLogin; window.openAdminLogin=openAdminLogin; window.doLogout=doLogout; window.backToLogin=backToLogin; window.showTab=showTab; window.renderMine=renderMine; window.renderCal=renderCal; window.renderToday=renderToday; window.renderArchive=renderArchive; window.addStaff=addStaff; window.removeStaff=removeStaff; window.saveNewMonthSimple=saveNewMonthSimple; window.deleteMonth=deleteMonth; window.resetAllData=resetAllData; window.saveClientIdAndConnect=saveClientIdAndConnect; window.scanDriveFolder=scanDriveFolder; window.fetchAndImportDriveFile=fetchAndImportDriveFile; window.importSelectedXLSX=importSelectedXLSX; window.showAdminTab=showAdminTab; populateNameSelect(); refreshDriveUI();
+</script>
+</body>
+</html>
