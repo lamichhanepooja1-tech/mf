@@ -177,6 +177,10 @@
   <div style="padding:0 16px 16px;text-align:center">
     <button class="btn btn-secondary text-sm" onclick="openPinModal()">🔑 Admin panel</button>
   </div>
+  <div id="todayBanner" style="display:none;margin:0 16px 16px;padding:12px;border-radius:10px;background:var(--surface);border-left:4px solid var(--accent)">
+    <div style="font-size:11px;color:var(--muted);margin-bottom:4px">📋 Your duty today</div>
+    <div id="todayBannerText" style="font-size:15px;font-weight:700"></div>
+  </div>
 </div>
 
 <!-- Roster view -->
@@ -246,75 +250,72 @@
 
     <!-- Setup checklist -->
     <div class="admin-section">
-      <h3>☑️ Google Cloud Setup Checklist</h3>
+      <h3>☑️ Google Cloud Setup (Do Once)</h3>
       <div style="font-size:12px;line-height:1.9;color:var(--muted)">
-        Complete these steps once before using Drive Sync:
         <ol style="padding-left:18px;margin-top:6px">
-          <li>Go to <a href="https://console.cloud.google.com" target="_blank" style="color:var(--accent)">console.cloud.google.com</a> → create or select a project</li>
-          <li>Go to <strong>APIs &amp; Services → Library</strong></li>
-          <li>Search <strong>"Google Drive API"</strong> → click <strong>Enable</strong>
+          <li>Go to <a href="https://console.cloud.google.com" target="_blank" style="color:var(--accent)">console.cloud.google.com</a> → create/select a project</li>
+          <li><strong>APIs &amp; Services → Library</strong> → search <strong>"Google Drive API"</strong> → Enable
             <a href="https://console.developers.google.com/apis/api/drive.googleapis.com/overview" target="_blank"
                style="display:inline-block;margin-left:6px;background:var(--accent);color:#0f172a;font-weight:700;padding:1px 7px;border-radius:4px;font-size:11px;text-decoration:none">Enable ↗</a>
           </li>
-          <li>Go to <strong>APIs &amp; Services → Credentials → Create Credentials → OAuth client ID</strong></li>
-          <li>Choose <strong>Web application</strong></li>
-          <li>Under <em>Authorized JavaScript origins</em> add:<br>
-            <code style="background:var(--surface2);padding:2px 6px;border-radius:3px;color:var(--accent)">https://lamichhanepooja1-tech.github.io</code>
-          </li>
-          <li>Copy the <strong>Client ID</strong> and paste it in Connect Drive below</li>
+          <li><strong>Credentials → Create → OAuth client ID → Web application</strong></li>
+          <li>Authorized JavaScript origins: <code style="background:var(--surface2);padding:2px 6px;border-radius:3px;color:var(--accent)">https://lamichhanepooja1-tech.github.io</code></li>
+          <li>Copy Client ID → paste below → Connect</li>
         </ol>
       </div>
     </div>
 
     <div class="admin-section">
-      <h3>🔗 Set Shared Source (Google Drive)</h3>
-      <p class="text-muted text-sm" style="margin-bottom:10px;line-height:1.6">
-        All users will sync from the URL you set here. Publish your Google Sheet as CSV:<br>
-        <strong>File → Share → Publish to web → CSV</strong>
-      </p>
-      <div id="driveStatus">
+      <h3>🔗 Connect Google Drive</h3>
+      <div id="driveStatus" style="font-size:12px;padding:8px;border-radius:6px;margin-bottom:8px;background:var(--surface2)">
         <span id="driveStatusText">Drive not connected</span>
       </div>
       <div class="btn-row mt8">
         <button class="btn btn-secondary" onclick="openDriveModal()">🔑 Connect Drive</button>
         <button class="btn btn-secondary" id="scanBtn" onclick="scanRosterFolder()" disabled>🔍 Scan Roster Folder</button>
       </div>
+      <p class="text-muted text-sm" style="margin-top:8px;line-height:1.6">
+        Scanning finds XLSX/Sheets files in your Drive <strong>"Roster"</strong> folder and auto-fills the CSV URL below.
+      </p>
+    </div>
 
-      <hr class="divider"/>
-      <div class="form-group">
-        <label>Public CSV URL (from published sheet)</label>
-        <input type="text" id="csvUrl" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv"/>
+    <div class="admin-section">
+      <h3>📡 Shared Roster Source</h3>
+      <div style="background:#1e3a5f;border-radius:8px;padding:10px 12px;font-size:12px;color:#93c5fd;margin-bottom:12px;line-height:1.7">
+        <strong>How shared sync works:</strong><br>
+        1. Admin publishes the Google Sheet as CSV (<strong>File → Share → Publish to web → CSV</strong>)<br>
+        2. Admin pastes URL below → clicks <strong>Save as Shared Source</strong><br>
+        3. <strong>All users automatically get the latest roster</strong> every time they open the app — no action needed from them
       </div>
       <div class="form-group">
-        <label>Roster type for this URL</label>
-        <select id="csvType">
-          <option value="observer">Observer</option>
-          <option value="forecaster">Forecaster</option>
-          <option value="srmet">Sr. Met</option>
-        </select>
+        <label>Published CSV URL (from Google Sheets)</label>
+        <input type="text" id="csvUrl" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv&gid=0"/>
+        <div class="text-muted text-sm mt8">
+          In Google Sheets: <strong>File → Share → Publish to web → Sheet1 → CSV → Publish</strong> → copy link
+        </div>
       </div>
       <div class="form-group">
-        <label>Header row (row number with staff names)</label>
+        <label>Header row number <span class="text-muted">(row containing staff names — row 7 for MFD sheet)</span></label>
         <input type="number" id="csvHeaderRow" value="7" min="1" max="30" oninput="updateRowHint('csvHeaderRow','csvRowHint')"/>
-        <div class="text-muted text-sm mt8" id="csvRowHint">⚠️ Row 7 means the 7th row of the sheet. Staff names must be in columns B onwards.</div>
+        <div class="text-muted text-sm mt8" id="csvRowHint">Row 7 = DAY | गते | Date | Bibhuti | Mean | Barun | Binu…</div>
       </div>
       <div class="form-group">
         <label>Month name (English)</label>
-        <input type="text" id="csvMonthEn" placeholder="e.g. Baisakh 2082"/>
+        <input type="text" id="csvMonthEn" placeholder="e.g. Jestha 2083"/>
       </div>
       <div class="form-group">
         <label>Nepali name</label>
-        <input type="text" id="csvMonthNp" placeholder="e.g. बैशाख २०८२"/>
+        <input type="text" id="csvMonthNp" placeholder="e.g. जेठ २०८३"/>
       </div>
       <div class="btn-row">
-        <button class="btn btn-primary" onclick="saveSharedSource()">💾 Save as Shared Source</button>
-        <button class="btn btn-warn" onclick="fetchAndImportCSV()">↻ Fetch Now</button>
+        <button class="btn btn-primary" onclick="saveAndFetchSharedSource()">💾 Save &amp; Sync Now</button>
+        <button class="btn btn-warn" onclick="fetchAndImportCSV()">↻ Fetch Again</button>
       </div>
       <div id="csvLog" class="mt8"></div>
     </div>
 
     <div class="admin-section">
-      <h3>📌 Saved Shared Sources</h3>
+      <h3>📌 Active Shared Sources <span class="text-muted text-sm">(all users auto-sync these on load)</span></h3>
       <div id="savedSources"><span class="text-muted text-sm">None saved.</span></div>
     </div>
   </div>
@@ -512,7 +513,40 @@ function viewRoster(){
   const name=document.getElementById('nameSelect').value;
   if(!name||!state.role) return;
   state.userName=name;
+  checkTodayBanner(name);
   showRosterFor(name, state.role);
+}
+
+function checkTodayBanner(name){
+  if(!name) return;
+  const d=getData();
+  const todayStr=new Date().toISOString().split('T')[0];
+  const banner=document.getElementById('todayBanner');
+  const bannerText=document.getElementById('todayBannerText');
+  // Search all months for today's duty
+  let found=null;
+  for(const month of d.months){
+    const duties=(month.duties&&month.duties[name])||[];
+    for(const e of duties){
+      if(e.isoDate===todayStr){found=e;break;}
+    }
+    if(found)break;
+  }
+  if(found&&found.shift&&found.shift.toLowerCase()!=='xx'){
+    banner.style.display='block';
+    banner.style.borderLeftColor='var(--accent)';
+    const SHIFT_DESC={'SM':'Morning (SM)','SD':'Day (SD)','SA':'Aviation (SA)','AF':'Afternoon (AF)',
+      'MF':'Morning Fcst (MF)','AFN*':'AFN Night*','MF*':'MF Morning*','DA':'Day Aviation',
+      'A1':'Aviation 1','M1':'Morning 1','NWP':'NWP Duty','D':'Day (D)','M':'Morning (M)'};
+    bannerText.textContent=`${name}: ${SHIFT_DESC[found.shift]||found.shift}`;
+  } else if(found){
+    banner.style.display='block';
+    banner.style.borderLeftColor='#334155';
+    bannerText.textContent=`${name}: Day off today ✓`;
+    bannerText.style.color='var(--muted)';
+  } else {
+    banner.style.display='none';
+  }
 }
 
 function goHome(){
@@ -524,52 +558,82 @@ function goHome(){
 // ─── ROSTER VIEW ─────────────────────────────────────────────────────────────
 function showRosterFor(name, type){
   const d=getData();
-  // find months for this type
-  const months=d.months.filter(m=>m.type===type);
+  // Find all months for this type (or srmet which holds combined MFD roster)
+  const typeKey = (type==='observer'||type==='forecaster') ? type : 'srmet';
+  const months=d.months.filter(m=>m.type===typeKey);
   if(months.length===0){
-    alert('No roster data loaded for this role yet.');
-    return;
+    // Also check srmet as fallback (combined roster)
+    const fallback=d.months.filter(m=>m.type==='srmet');
+    if(fallback.length===0){
+      alert('No roster data loaded yet. Ask admin to connect the Google Sheet and sync.');
+      return;
+    }
+    months.push(...fallback);
   }
-  // show most recent month
+  // Show most recent month (last added)
   const month=months[months.length-1];
   const duties=(month.duties&&month.duties[name])||[];
 
   document.getElementById('homeScreen').style.display='none';
   document.getElementById('rosterView').style.display='block';
   document.getElementById('tabBar').style.display='none';
-  document.getElementById('rosterTitle').textContent=`${name} — ${type.charAt(0).toUpperCase()+type.slice(1)}`;
+  document.getElementById('rosterTitle').textContent=`${name}`;
   document.getElementById('rosterMonth').textContent=`${month.nameEn}${month.nameNp?' · '+month.nameNp:''}`;
 
   const container=document.getElementById('rosterCards');
+
   if(duties.length===0){
-    container.innerHTML='<div class="text-muted text-sm" style="padding:20px 0;text-align:center">No duties found for this month.</div>';
+    container.innerHTML='<div class="text-muted text-sm" style="padding:20px 0;text-align:center">No duties found for '+name+' this month.</div>';
     return;
   }
+
+  // Today's date for highlighting
+  const todayStr=new Date().toISOString().split('T')[0];
+
+  // Shift display config
+  const SHIFT_DESC={
+    'SM':'Morning (SM)','SD':'Day (SD)','SA':'Aviation (SA)',
+    'AF':'Afternoon (AF)','MF':'Morning Fcst (MF)',
+    'AFN*':'AFN Night*','AFN':'Afternoon Night','MF*':'MF Morning*',
+    'DA':'Day Aviation (DA)','A1':'Aviation 1','M1':'Morning 1',
+    'NWP':'NWP Duty','D':'Day (D)','M':'Morning (M)',
+    'घर बिदा':'Home Leave','xx':'Off','XX':'Off',
+    'SM1':'SM Morning 1','SD1':'SD Day 1'
+  };
+  const SHIFT_COLOR={
+    'SM':'#1e3a8a','SD':'#1e40af','SA':'#0369a1',
+    'MF':'#4c1d95','MF*':'#5b21b6','AF':'#6d28d9','AF*':'#7c3aed',
+    'AFN':'#312e81','AFN*':'#312e81',
+    'DA':'#064e3b','A1':'#065f46','M1':'#047857',
+    'NWP':'#78350f','D':'#1e3a8a','M':'#1e3a8a',
+    'घर बिदा':'#374151','xx':'#1e293b','XX':'#1e293b'
+  };
+  const WEEKDAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
   container.innerHTML=duties.map(entry=>{
     const shift=entry.shift||'';
-    // Shift code descriptions for MFD roster
-    const SHIFT_DESC={
-      'SM':'Morning (SM)','SD':'Day (SD)','SA':'Aviation Day (SA)',
-      'AF':'Afternoon (AF)','MF':'Morning Forecast (MF)','AFN':'Afternoon Night (AFN)',
-      'AFN*':'AFN Night*','MF*':'MF Morning*','AF*':'AF*',
-      'DA':'Day Aviation (DA)','A1':'Aviation 1 (A1)','M1':'Morning 1 (M1)',
-      'NWP':'NWP','D':'Day (D)','M':'Morning (M)',
-      'घर बिदा':'Home Leave','xx':'Off','XX':'Off'
-    };
-    // Color classes
-    const SHIFT_COLOR={
-      'SM':'#1d4ed8','SD':'#1d4ed8','SA':'#0369a1',
-      'AF':'#7c3aed','MF':'#6d28d9','AFN':'#4c1d95','AFN*':'#4c1d95','MF*':'#6d28d9','AF*':'#7c3aed',
-      'DA':'#065f46','A1':'#047857','M1':'#059669',
-      'NWP':'#92400e','D':'#1e40af','M':'#1d4ed8',
-      'घर बिदा':'#374151','xx':'#374151','XX':'#374151'
-    };
     const desc=SHIFT_DESC[shift]||shift;
     const color=SHIFT_COLOR[shift]||'#334155';
-    return `<div class="day-card">
+    const isOff=(!shift||shift.toLowerCase()==='xx');
+    // ISO date from entry
+    const isoDate=entry.isoDate||'';
+    const isToday=isoDate&&isoDate===todayStr;
+    // Display date
+    let dateDisplay='Day '+entry.day;
+    if(isoDate){
+      const d2=new Date(isoDate+'T00:00:00');
+      const dow=WEEKDAYS[d2.getDay()];
+      const mm=String(d2.getMonth()+1).padStart(2,'0');
+      const dd=String(d2.getDate()).padStart(2,'0');
+      dateDisplay=`${dow}, ${dd}/${mm}`;
+    }
+    return `<div class="day-card${isToday?' today':''}" style="${isToday?'border-left-color:var(--accent);background:var(--surface2)':''}">
       <div class="date-row">
-        <span class="eng-date">Day ${entry.day}</span>
-        <span class="shift" style="background:${color};color:#f1f5f9;padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700">${desc}</span>
+        <div>
+          <span class="eng-date">${dateDisplay}</span>
+          <span class="nep-date"> · ${entry.day} गते${isToday?' <span style="background:var(--accent);color:#0f172a;padding:1px 6px;border-radius:99px;font-size:10px;font-weight:700">TODAY</span>':''}</span>
+        </div>
+        <span class="shift" style="background:${isOff?'#1e293b':color};color:${isOff?'#64748b':'#f1f5f9'};padding:3px 10px;border-radius:99px;font-size:12px;font-weight:700">${desc||'Off'}</span>
       </div>
     </div>`;
   }).join('');
@@ -725,7 +789,23 @@ function processRosterRows(rows, headerRow, type, monthEn, monthNp, source){
     const colA = String(row[0]||'').trim().toLowerCase();
     if(colA && !DAY_LABELS.has(colA)) continue; // skip summary/footer rows
 
-    for(const [colStr, name] of Object.entries(staffColMap)){
+    // ── Get ISO date from col C (index 2) — the English date column ──────
+    let isoDate = '';
+    const rawDate = row[2]; // col C = Date column in MFD sheet
+    if(rawDate){
+      const ds = String(rawDate).trim();
+      if(ds.match(/^\d{4}-\d{2}-\d{2}/)){
+        isoDate = ds.slice(0,10);
+      } else {
+        // Try natural date string (e.g. "2026-05-15 00:00:00")
+        const dt = new Date(ds);
+        if(!isNaN(dt.getTime()) && dt.getFullYear() > 2000){
+          isoDate = dt.toISOString().split('T')[0];
+        }
+      }
+    }
+
+
       const col = parseInt(colStr);
       const raw = row[col];
       let shift = '';
@@ -747,7 +827,7 @@ function processRosterRows(rows, headerRow, type, monthEn, monthNp, source){
       // Skip blank, XX (off day), or घर बिदा (home leave shown as off)
       if(!shift || /^(xx|XX)$/.test(shift)) continue;
 
-      duties[name].push({day: dayNum, shift});
+      duties[name].push({day: dayNum, shift, isoDate: isoDate||''});
     }
   }
 
@@ -1003,31 +1083,51 @@ function showDriveApiError(url, projId){
     </div>`;
 }
 
-// ─── SHARED SOURCE (CSV) ──────────────────────────────────────────────────────
-function saveSharedSource(){
+// ─── SHARED SOURCE — Save + Fetch immediately ─────────────────────────────────
+// Admin calls this: saves the URL and immediately fetches + stores the roster.
+// All other users get the updated roster next time they load the page (autoSyncSharedSources).
+async function saveAndFetchSharedSource(){
   const url=document.getElementById('csvUrl').value.trim();
-  const type=document.getElementById('csvType').value;
   const headerRow=parseInt(document.getElementById('csvHeaderRow').value)||7;
   const monthEn=document.getElementById('csvMonthEn').value.trim();
   const monthNp=document.getElementById('csvMonthNp').value.trim();
-  if(!url){alert('Please enter a CSV URL.');return;}
-  if(!monthEn){alert('Please enter a month name.');return;}
+  if(!url){alert('Please enter the CSV URL from Google Sheets.');return;}
+  if(!monthEn){alert('Please enter a month name (English).');return;}
 
+  // Determine type from data (always srmet for MFD combined sheet)
+  const type='srmet';
+
+  // 1. Save the shared source config so all users auto-sync on load
   const d=getData();
   if(!d.sharedSources) d.sharedSources=[];
-  // Replace existing entry for same type+month, or add new
-  const existIdx=d.sharedSources.findIndex(s=>s.type===type&&s.monthEn===monthEn);
+  const existIdx=d.sharedSources.findIndex(s=>s.monthEn===monthEn);
   const entry={url,type,headerRow,monthEn,monthNp,addedAt:new Date().toISOString()};
   if(existIdx>=0) d.sharedSources[existIdx]=entry;
   else d.sharedSources.push(entry);
   saveData(d);
   renderSavedSources();
-  setCsvLog('✓ Saved. All users will sync this source on next load.','ok');
+
+  // 2. Fetch NOW so admin sees it immediately
+  setCsvLog('⟳ Fetching roster from sheet…','info');
+  try{
+    await fetchAndStoreCSV(url,type,headerRow,monthEn,monthNp,true);
+    setCsvLog('✅ Saved & synced! All users will auto-load this roster on next page open.','ok');
+    renderNameSelect();
+    document.getElementById('syncIndicator').style.display='inline';
+    document.getElementById('syncIndicator').textContent='✓ Synced';
+  }catch(e){
+    setCsvLog('❌ Saved URL but fetch failed: '+e.message+'\n\nMake sure the sheet is published publicly (File → Share → Publish to web → CSV).','err');
+  }
+}
+
+function saveSharedSource(){
+  // Keep as alias for compatibility
+  saveAndFetchSharedSource();
 }
 
 async function fetchAndImportCSV(){
   const url=document.getElementById('csvUrl').value.trim();
-  const type=document.getElementById('csvType').value;
+  const type='srmet'; // MFD sheet always combined
   const headerRow=parseInt(document.getElementById('csvHeaderRow').value)||7;
   const monthEn=document.getElementById('csvMonthEn').value.trim();
   const monthNp=document.getElementById('csvMonthNp').value.trim();
@@ -1036,7 +1136,8 @@ async function fetchAndImportCSV(){
   setCsvLog('⟳ Fetching…','info');
   try{
     await fetchAndStoreCSV(url,type,headerRow,monthEn,monthNp,true);
-    setCsvLog('✓ Fetched and imported successfully!','ok');
+    setCsvLog('✅ Fetched and imported successfully!','ok');
+    renderNameSelect();
   }catch(e){
     setCsvLog('❌ '+e.message,'err');
   }
@@ -1094,15 +1195,32 @@ function renderSavedSources(){
   const d=getData();
   const el=document.getElementById('savedSources');
   const sources=d.sharedSources||[];
-  if(sources.length===0){el.innerHTML='<span class="text-muted text-sm">None saved.</span>';return;}
+  if(sources.length===0){el.innerHTML='<span class="text-muted text-sm">No shared sources saved yet. Set a CSV URL above and click Save &amp; Sync Now.</span>';return;}
   el.innerHTML=sources.map((s,i)=>`
-    <div style="padding:8px;background:var(--surface2);border-radius:6px;margin-bottom:6px;font-size:12px">
-      <div class="font-bold">${s.monthEn} · ${s.type}</div>
-      <div class="text-muted" style="margin:2px 0;word-break:break-all">${s.url.substring(0,60)}…</div>
-      <div class="text-muted">Header row: ${s.headerRow||7}</div>
-      <button class="btn btn-danger" style="margin-top:4px;padding:4px 8px;font-size:11px" onclick="deleteSource(${i})">🗑 Remove</button>
+    <div style="padding:10px;background:var(--surface2);border-radius:8px;margin-bottom:8px;font-size:12px;border-left:3px solid var(--accent)">
+      <div class="font-bold" style="margin-bottom:3px">📅 ${s.monthEn}${s.monthNp?' · '+s.monthNp:''}</div>
+      <div class="text-muted" style="margin:2px 0;word-break:break-all;font-size:11px">${s.url.substring(0,70)}…</div>
+      <div class="text-muted" style="font-size:11px">Header row: ${s.headerRow||7} · Saved: ${new Date(s.addedAt).toLocaleDateString()}</div>
+      <div style="margin-top:6px;display:flex;gap:6px">
+        <button class="btn btn-warn" style="padding:4px 10px;font-size:11px" onclick="refetchSource(${i})">↻ Re-sync</button>
+        <button class="btn btn-danger" style="padding:4px 10px;font-size:11px" onclick="deleteSource(${i})">🗑 Remove</button>
+      </div>
     </div>
   `).join('');
+}
+
+async function refetchSource(idx){
+  const d=getData();
+  const s=d.sharedSources[idx];
+  if(!s)return;
+  setCsvLog('⟳ Re-syncing '+s.monthEn+'…','info');
+  try{
+    await fetchAndStoreCSV(s.url,s.type||'srmet',s.headerRow||7,s.monthEn,s.monthNp,true);
+    setCsvLog('✅ Re-synced: '+s.monthEn,'ok');
+    renderNameSelect();
+  }catch(e){
+    setCsvLog('❌ '+e.message,'err');
+  }
 }
 
 function deleteSource(idx){
